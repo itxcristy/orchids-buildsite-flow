@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clear Service Worker - BuildFlow</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 10px 5px;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    .status {
+      margin: 20px 0;
+      padding: 15px;
+      border-radius: 6px;
+      background: #f0f0f0;
+    }
+    .success {
+      background: #d4edda;
+      color: #155724;
+    }
+    .error {
+      background: #f8d7da;
+      color: #721c24;
+    }
+  </style>
+</head>
+<body>
+  <h1>Clear Service Worker & Cache</h1>
+  <p>Use this page to manually clear the Service Worker and all caches if you're experiencing loading issues.</p>
+  
+  <button onclick="clearServiceWorker()">Clear Service Worker</button>
+  <button onclick="clearCaches()">Clear All Caches</button>
+  <button onclick="clearEverything()">Clear Everything</button>
+  
+  <div id="status"></div>
+
+  <script>
+    function showStatus(message, isError = false) {
+      const statusDiv = document.getElementById('status');
+      statusDiv.textContent = message;
+      statusDiv.className = 'status ' + (isError ? 'error' : 'success');
+    }
+
+    async function clearServiceWorker() {
+      try {
+        if ('serviceWorker' in navigator) {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          
+          for (const registration of registrations) {
+            // Send skip waiting message
+            if (registration.waiting) {
+              registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+            }
+            if (registration.installing) {
+              registration.installing.postMessage({ type: 'SKIP_WAITING' });
+            }
+            
+            // Unregister
+            const success = await registration.unregister();
+            if (success) {
+              showStatus(`Service Worker unregistered successfully. Found ${registrations.length} registration(s).`);
+            } else {
+              showStatus('Failed to unregister Service Worker.', true);
+            }
+          }
+          
+          if (registrations.length === 0) {
+            showStatus('No Service Worker registrations found.');
+          }
+        } else {
+          showStatus('Service Workers are not supported in this browser.');
+        }
+      } catch (error) {
+        showStatus('Error: ' + error.message, true);
+      }
+    }
+
+    async function clearCaches() {
+      try {
+        const cacheNames = await caches.keys();
+        await Promise.all(
+          cacheNames.map(cacheName => caches.delete(cacheName))
+        );
+        showStatus(`Cleared ${cacheNames.length} cache(s): ${cacheNames.join(', ')}`);
+      } catch (error) {
+        showStatus('Error clearing caches: ' + error.message, true);
+      }
+    }
+
+    async function clearEverything() {
+      try {
+        // Clear service workers
+        if ('serviceWorker' in navigator) {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          for (const registration of registrations) {
+            if (registration.waiting) {
+              registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+            }
+            if (registration.installing) {
+              registration.installing.postMessage({ type: 'SKIP_WAITING' });
+            }
+            await registration.unregister();
+          }
+        }
+        
+        // Clear caches
+        const cacheNames = await caches.keys();
+        await Promise.all(
+          cacheNames.map(cacheName => caches.delete(cacheName))
+        );
+        
+        showStatus(`Cleared everything! Unregistered ${registrations?.length || 0} Service Worker(s) and ${cacheNames.length} cache(s).`);
+        
+        // Reload after 2 seconds
+        setTimeout(() => {
+          window.location.reload();
+        }, 2000);
+      } catch (error) {
+        showStatus('Error: ' + error.message, true);
+      }
+    }
+
+    // Check current status on load
+    window.addEventListener('load', async () => {
+      let status = 'Status: ';
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        status += `${registrations.length} Service Worker registration(s) found. `;
+        
+        const cacheNames = await caches.keys();
+        status += `${cacheNames.length} cache(s) found: ${cacheNames.join(', ')}`;
+      } else {
+        status += 'Service Workers not supported.';
+      }
+      showStatus(status);
+    });
+  </script>
+</body>
+</html>
+

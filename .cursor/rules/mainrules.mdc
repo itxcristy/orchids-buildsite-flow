@@ -1,0 +1,49 @@
+---
+alwaysApply: true
+---
+## Database Connection (CRITICAL - Use These Exactly)
+- Database: buildflow_db
+- User: postgres
+- Password: admin
+- Always verify connection before starting any work
+
+## Pre-Development Checklist
+1. FIRST: Connect to DB and fetch ALL table schemas (names, columns, types, constraints)
+2. Verify foreign key relationships between tables
+3. Check existing indexes and primary keys
+4. Never assume structure - always query information_schema first
+
+## Backend Rules
+- Create ONE central DB config file with connection details
+- Build models that EXACTLY match DB table structures
+- Generate API endpoints: GET (all/single), POST, PUT, PATCH, DELETE for each table
+- Add proper error handling with specific DB error messages
+- Include data validation matching DB constraints (NOT NULL, UNIQUE, etc)
+- Use transactions for multi-table operations
+- Return consistent JSON responses: {success, data/error, message}
+
+## Frontend Rules
+- Check backend health endpoint on app load
+- Fetch and display actual table data on mount
+- Build forms with fields matching exact DB columns and types
+- Show loading states during API calls
+- Display clear error messages from backend
+- Implement optimistic UI updates with rollback on failure
+- Add confirmation dialogs for DELETE operations
+
+## Query Handling
+- Use parameterized queries (NEVER string concatenation)
+- Add proper WHERE clauses for filtering
+- Implement pagination for large datasets
+- Include search functionality on text columns
+- Add sorting capabilities on table columns
+
+## Testing Protocol
+- Test each CRUD operation immediately after creation
+- Verify data appears in DB after POST/PUT
+- Check frontend displays DB changes in real-time
+- Test error scenarios (duplicate keys, constraint violations)
+- Validate form inputs match DB requirements
+
+## Auto-Fix Rule
+If ANY operation fails: Stop, check DB schema again, compare with code, fix mismatch, then continue.

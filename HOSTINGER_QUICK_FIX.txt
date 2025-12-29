@@ -1,0 +1,46 @@
+========================================
+QUICK FIX: "your-domain.com" Issue
+========================================
+
+PROBLEM:
+Frontend was built with wrong API URL (your-domain.com instead of dezignbuild.site)
+
+SOLUTION:
+The frontend needs to be REBUILT with the correct VITE_API_URL value.
+
+STEP 1: Verify Environment Variable
+------------------------------------
+In Hostinger Environment Variables, make sure you have:
+VITE_API_URL=http://dezignbuild.site:3000/api
+
+STEP 2: Rebuild Frontend Container
+-----------------------------------
+Option A - Via Hostinger Docker Manager:
+1. Stop the frontend container
+2. Delete the frontend container
+3. Delete the image: dezign-frontend:latest
+4. Redeploy - it will rebuild with correct VITE_API_URL
+
+Option B - If you have SSH access:
+docker compose build --no-cache frontend
+docker compose up -d frontend
+
+Option C - Force rebuild in YAML:
+Add this to frontend service in docker-compose.yml:
+  build:
+    no_cache: true
+
+Then redeploy.
+
+WHY THIS HAPPENS:
+Vite embeds VITE_API_URL into the JavaScript code during build.
+Changing env vars after build won't work - you MUST rebuild.
+
+VERIFICATION:
+After rebuild, check browser console:
+- Should see: http://dezignbuild.site:3000/api
+- Should NOT see: http://your-domain.com:3000/api
+- No CORS errors
+
+========================================
+
